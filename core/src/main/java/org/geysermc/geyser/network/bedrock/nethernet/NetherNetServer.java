@@ -421,7 +421,7 @@ public final class NetherNetServer implements EventRegistrar {
             ProviderTransport initializingTransport = null;
             try {
                 BedrockListener listener = geyser.config().bedrock();
-                ProviderRuntimeConfiguration runtime = ProviderRuntimeConfiguration.resolve(providerSettings(config, advertised, geyser.config().advanced().nxs()),
+                ProviderRuntimeConfiguration runtime = ProviderRuntimeConfiguration.resolve(providerSettings(config, advertised, geyser.config().advanced().nxs(), geyser.config().advanced().bedrock()),
                     dataFolder, listener.address(), webrtcPort, collectServerStatus().maxPlayerCount());
                 URI origin = runtime.origin();
                 var statePath = runtime.stateDirectory();
@@ -498,7 +498,8 @@ public final class NetherNetServer implements EventRegistrar {
      */
     public static ProviderRuntimeConfiguration.Settings providerSettings(GeyserConfig.SignalingConfig signaling,
                                                                          List<String> advertised,
-                                                                         GeyserConfig.AdvancedNxsConfig advanced) throws IOException {
+                                                                         GeyserConfig.AdvancedNxsConfig advanced,
+                                                                         GeyserConfig.AdvancedBedrockConfig advancedBedrock) throws IOException {
         GeyserConfig.SignalingConfig.NxsConfig nxs = signaling.nxs();
         ProviderClient.Location location;
         try {
@@ -516,6 +517,10 @@ public final class NetherNetServer implements EventRegistrar {
             .location(location)
             .bedrockProtocols(bedrockProtocols())
             .gameOutcomes(true)
+            // NXS ICE must trust a UDP relay before accepting its PROXY v2 client address.
+            .proxyProtocolRelays(advancedBedrock.useHaproxyProtocol()
+                ? TrustedProxies.parse(advancedBedrock.haproxyProtocolWhitelistedIps())
+                : IpRangeSet.empty())
             .build();
     }
 

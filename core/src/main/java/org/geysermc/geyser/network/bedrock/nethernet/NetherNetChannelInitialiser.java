@@ -68,6 +68,24 @@ public class NetherNetChannelInitialiser extends GeyserServerInitializer {
 
     @Override
     protected void preInitChannel(Channel channel) {
+        // VoxelHorizons temporary diagnostic: classify, do not disclose, the remote IP.
+        String addressCategory = "UNKNOWN";
+        if (channel.remoteAddress() instanceof InetSocketAddress remote) {
+            var address = remote.getAddress();
+            if (address == null) {
+                addressCategory = "UNRESOLVED";
+            } else if (address.isLoopbackAddress()) {
+                addressCategory = "LOOPBACK";
+            } else if (address.isAnyLocalAddress()) {
+                addressCategory = "UNSPECIFIED";
+            } else if (address.isSiteLocalAddress() || address.isLinkLocalAddress()) {
+                addressCategory = "PRIVATE_OR_LINK_LOCAL";
+            } else {
+                addressCategory = "OTHER";
+            }
+        }
+        geyser.getLogger().info("[VH-IP-TRACE] NetherNet channel = " + addressCategory);
+
         // Extensions refuse peers by address here, the same gate RakNet applies before a session exists.
         // NetherNet carries no PROXY protocol, so the peer address is the client address.
         if (channel.remoteAddress() instanceof InetSocketAddress clientAddress

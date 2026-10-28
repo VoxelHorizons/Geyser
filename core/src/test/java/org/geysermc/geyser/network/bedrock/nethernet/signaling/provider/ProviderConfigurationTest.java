@@ -68,9 +68,13 @@ class ProviderConfigurationTest {
         return load(yaml, GeyserConfig.AdvancedNxsConfig.class);
     }
 
+    private static GeyserConfig.AdvancedBedrockConfig bedrock(String yaml) throws IOException {
+        return load(yaml, GeyserConfig.AdvancedBedrockConfig.class);
+    }
+
     private static ProviderRuntimeConfiguration.Settings settings(GeyserConfig.SignalingConfig config,
                                                                   GeyserConfig.AdvancedNxsConfig advanced) throws IOException {
-        return NetherNetServer.providerSettings(config, config.advertiseAddresses(), advanced);
+        return NetherNetServer.providerSettings(config, config.advertiseAddresses(), advanced, bedrock("{}"));
     }
 
     private static ProviderRuntimeConfiguration resolve(GeyserConfig.SignalingConfig config,
@@ -151,6 +155,25 @@ class ProviderConfigurationTest {
         config.stunDiscovery(false);
 
         assertFalse(settings(config, advanced("{}")).stunDiscovery());
+    }
+
+    @Test
+    void nxsOnlyTrustsExplicitlyConfiguredUdpProxyRelays() throws Exception {
+        var enabled = bedrock("""
+            use-haproxy-protocol: true
+            haproxy-protocol-whitelisted-ips: ['127.0.0.1/32']
+            """);
+        var disabled = bedrock("""
+            use-haproxy-protocol: false
+            haproxy-protocol-whitelisted-ips: ['127.0.0.1/32']
+            """);
+        var signaling = config("{}");
+        var nxs = advanced("{}");
+        assertEquals(List.of("127.0.0.1/32"),
+            NetherNetServer.providerSettings(signaling, List.of(), nxs, enabled).proxyProtocolRelays().entries());
+        assertTrue(NetherNetServer.providerSettings(signaling, List.of(), nxs, disabled).proxyProtocolRelays().isEmpty());
+        assertTrue(NetherNetServer.providerSettings(signaling, List.of(), nxs, bedrock("{}"))
+            .proxyProtocolRelays().isEmpty());
     }
 
     @Test

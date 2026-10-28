@@ -836,7 +836,6 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource, Jav
     /**
      * Stores cookies sent by the Java server.
      */
-    @Setter
     private Map<String, byte[]> cookies = new Object2ObjectOpenHashMap<>();
 
     private final GeyserCameraData cameraData;
@@ -1203,6 +1202,18 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource, Jav
 
         // Start ticking
         tickThread = tickEventLoop.scheduleAtFixedRate(this::tick, nanosecondsPerTick, nanosecondsPerTick, TimeUnit.NANOSECONDS);
+
+        // VoxelHorizons temporary diagnostic: log IP category only (never an address).
+        var upstreamAddress = upstream.getAddress().getAddress();
+        String addressCategory = upstreamAddress == null ? "UNKNOWN"
+                : upstreamAddress.isLoopbackAddress() ? "LOOPBACK"
+                : upstreamAddress.isAnyLocalAddress() ? "UNSPECIFIED"
+                : upstreamAddress.isSiteLocalAddress() || upstreamAddress.isLinkLocalAddress()
+                    ? "PRIVATE_OR_LINK_LOCAL"
+                : "OTHER";
+        geyser.getLogger().info("[VH-IP-TRACE] Geyser upstream = " + addressCategory
+                + " (directConnection=" + (geyser.getBootstrap().getSocketAddress() != null)
+                + ", javaHaproxy=" + geyser.config().advanced().java().useHaproxyProtocol() + ")");
 
         ClientSession downstream;
         if (geyser.getBootstrap().getSocketAddress() != null) {
