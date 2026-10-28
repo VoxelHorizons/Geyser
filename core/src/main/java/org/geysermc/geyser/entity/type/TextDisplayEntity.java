@@ -249,12 +249,33 @@ public class TextDisplayEntity extends DisplayBaseEntity {
         updatePrimitiveText();
     }
 
+    // Java TextDisplay metadata flags (Minecraft 26.3):
+    // 0x01 = shadow, 0x02 = see through blocks, 0x04 = default background.
+    // Do not mistake default-background (0x04) for see-through; that disables
+    // Bedrock DebugText depth testing and lets holograms show through walls.
+    static final int STYLE_FLAG_SHADOW = 0x01;
+    static final int STYLE_FLAG_SEE_THROUGH = 0x02;
+    static final int STYLE_FLAG_DEFAULT_BACKGROUND = 0x04;
+
+    static boolean hasStyleFlag(byte flags, int mask) {
+        return (flags & mask) != 0;
+    }
+
+    /**
+     * Java TextDisplay's see_through flag and Bedrock DebugText's depthTest
+     * property have opposite meanings. Keep this mapping in one place so
+     * default, shadowed, and background-only text remains block-occluded.
+     */
+    static void applySeeThroughToBedrock(DebugText bedrockText, boolean javaSeeThrough) {
+        bedrockText.setDepthTest(!javaSeeThrough);
+    }
+
     public void setStyleFlags(ByteEntityMetadata metadata) {
         byte flags = metadata.getPrimitiveValue();
 
-        this.defaultBackground = (flags & 0x01) == 1;
-        this.shadow = ((flags >> 1) & 0x01) == 1;
-        this.seeThrough = ((flags >> 2) & 0x01) == 1;
+        this.shadow = hasStyleFlag(flags, STYLE_FLAG_SHADOW);
+        this.seeThrough = hasStyleFlag(flags, STYLE_FLAG_SEE_THROUGH);
+        this.defaultBackground = hasStyleFlag(flags, STYLE_FLAG_DEFAULT_BACKGROUND);
 
         updatePrimitiveText();
     }
@@ -411,7 +432,7 @@ public class TextDisplayEntity extends DisplayBaseEntity {
         text.setUseRotation(!getBillboard().equals(Billboard.CENTER));
         text.setMaximumRenderDistance(getViewDistance());
         text.setBackgroundColor(backgroundColor);
-        text.setDepthTest(!seeThrough);
+        applySeeThroughToBedrock(text, seeThrough);
         //text.setLineGapHeight();
         //text.setShowBackface();
         //text.setShowTextBackface();
