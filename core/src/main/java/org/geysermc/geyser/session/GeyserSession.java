@@ -1185,6 +1185,19 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource, Jav
         // Start ticking
         tickThread = tickEventLoop.scheduleAtFixedRate(this::tick, nanosecondsPerTick, nanosecondsPerTick, TimeUnit.NANOSECONDS);
 
+        // Temporary diagnostic: verify the address Geyser passes to the Java server.
+        // Only log an address category, never a player's actual IP.
+        var upstreamAddress = upstream.getAddress().getAddress();
+        String addressCategory = upstreamAddress == null ? "UNKNOWN"
+                : upstreamAddress.isLoopbackAddress() ? "LOOPBACK"
+                : upstreamAddress.isAnyLocalAddress() ? "UNSPECIFIED"
+                : upstreamAddress.isSiteLocalAddress() || upstreamAddress.isLinkLocalAddress()
+                    ? "PRIVATE_OR_LINK_LOCAL"
+                : "OTHER";
+        geyser.getLogger().info("[VH-IP-TRACE] Geyser upstream = " + addressCategory
+                + " (directConnection=" + (geyser.getBootstrap().getSocketAddress() != null)
+                + ", javaHaproxy=" + geyser.config().advanced().java().useHaproxyProtocol() + ")");
+
         ClientSession downstream;
         if (geyser.getBootstrap().getSocketAddress() != null) {
             // We're going to connect through the JVM and not through TCP
