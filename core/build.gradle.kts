@@ -19,6 +19,10 @@ plugins {
 dependencies {
     constraints {
         implementation(libs.raknet) // Ensure protocol does not override the RakNet version
+        // Transitive Cloudburst protocol dependency. CVE-2025-67721 is fixed in 2.0.3.
+        implementation("io.airlift:aircompressor:2.0.3") {
+            because("Use patched Aircompressor instead of vulnerable 0.27")
+        }
     }
 
     api(projects.common)
