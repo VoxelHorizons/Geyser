@@ -22,3 +22,9 @@ jobs:
           java-version: '25'
       - name: Build and test Geyser Core
         run: ./gradlew :core:build --no-daemon --stacktrace
+      - name: Record resolved Netty and Aircompressor runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew :core:dependencyInsight --dependency io.netty:netty-handler --configuration runtimeClasspath --no-daemon
+          ./gradlew :core:dependencyInsight --dependency io.airlift:aircompressor --configuration runtimeClasspath --no-daemon
